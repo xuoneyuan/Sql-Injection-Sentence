@@ -1,0 +1,2 @@
+# sql_injection_sentence
+记录一些常用的sql注入语句
