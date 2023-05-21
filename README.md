@@ -1,2 +1,2 @@
 # sql_injection_sentence
-记录一些常用的sql注入语句
+记录一些常用的sql注入语句以及某些waf的绕过方法
